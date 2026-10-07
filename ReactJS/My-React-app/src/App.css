@@ -1,0 +1,23 @@
+body {
+  background: #000;
+}
+
+.app {
+  text-align: center;
+  margin-top: 200px;
+}
+
+h1 {
+  font-size: 20px;
+  color: yellow;
+}
+
+p {
+  font-size: 12px;
+  color: red;
+}
+
+button {
+  padding: 8px;
+  font-size: 18px;
+}
