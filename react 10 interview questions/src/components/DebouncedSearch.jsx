@@ -4,34 +4,39 @@ function DebouncedSearch() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
+    if (!query.trim()) return;
 
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
       setLoading(true);
+      setError("");
 
       try {
         const response = await fetch(
           `https://dummyjson.com/products/search?q=${encodeURIComponent(
             query
-          )}`
+          )}`,
+          { signal: controller.signal },
         );
 
-        const data = await response.json();
+        if (!response.ok) throw new Error("Could not search products.");
 
-        setResults(data.products || []);
+        const data = await response.json();
+        setResults(data.products);
       } catch (error) {
-        console.error(error);
+        if (error.name !== "AbortError") setError(error.message);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }, 500);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [query]);
 
   return (
@@ -41,11 +46,20 @@ function DebouncedSearch() {
       <input
         className="input"
         value={query}
-        onChange={(event) => setQuery(event.target.value)}
+        onChange={(event) => {
+          const value = event.target.value;
+          setQuery(value);
+          setLoading(false);
+          if (!value.trim()) {
+            setResults([]);
+            setError("");
+          }
+        }}
         placeholder="Search products..."
       />
 
       {loading && <p>Searching...</p>}
+      {error && <p className="error">{error}</p>}
 
       <div>
         {results.map((product) => (

@@ -7,45 +7,61 @@ function InfiniteScroll() {
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [error, setError] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
 
   const loaderRef = useRef(null);
+  const loadingRef = useRef(false);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      if (loading || !hasMore) return;
+    const controller = new AbortController();
 
+    const fetchProducts = async () => {
+      if (loadingRef.current || !hasMore) return;
+
+      loadingRef.current = true;
       setLoading(true);
+      setError("");
 
       const skip = page * LIMIT;
 
       try {
         const response = await fetch(
-          `https://dummyjson.com/products?limit=${LIMIT}&skip=${skip}`
+          `https://dummyjson.com/products?limit=${LIMIT}&skip=${skip}`,
+          { signal: controller.signal },
         );
+
+        if (!response.ok) throw new Error("Could not load more products.");
 
         const data = await response.json();
 
-        setProducts((previous) => [
-          ...previous,
-          ...data.products,
-        ]);
-
+        setProducts((previous) => [...previous, ...data.products]);
         setHasMore(skip + data.products.length < data.total);
+      } catch (error) {
+        if (error.name !== "AbortError") setError(error.message);
       } finally {
-        setLoading(false);
+        loadingRef.current = false;
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
     fetchProducts();
-  }, [page]);
+
+    return () => {
+      controller.abort();
+      loadingRef.current = false;
+    };
+  }, [page, hasMore, retryCount]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (
-          entries[0].isIntersecting &&
+          entries[0]?.isIntersecting &&
           hasMore &&
-          !loading
+          !loading &&
+          !error &&
+          !loadingRef.current
         ) {
           setPage((value) => value + 1);
         }
@@ -62,7 +78,7 @@ function InfiniteScroll() {
     }
 
     return () => observer.disconnect();
-  }, [hasMore, loading]);
+  }, [error, hasMore, loading]);
 
   return (
     <>
@@ -74,9 +90,20 @@ function InfiniteScroll() {
         </div>
       ))}
 
+      {error && (
+        <div className="error">
+          <p>{error}</p>
+          <button onClick={() => setRetryCount((value) => value + 1)}>
+            Try again
+          </button>
+        </div>
+      )}
+
       <div ref={loaderRef} className="loader">
         {loading
           ? "Loading..."
+          : error
+          ? ""
           : hasMore
           ? "Scroll for more"
           : "No more products"}
