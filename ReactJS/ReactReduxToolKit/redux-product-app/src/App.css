@@ -182,3 +182,18 @@
     border-right-color: var(--border);
   }
 }
+
+
+.table {
+  text-align: center;
+  display: flex;
+  justify-content: center;
+}
+
+.tbody {
+  text-align: center;
+  display: flex;
+  justify-content: flex-end;
+  background-color: aqua;
+}
+

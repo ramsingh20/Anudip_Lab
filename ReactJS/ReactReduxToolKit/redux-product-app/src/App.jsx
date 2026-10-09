@@ -16,11 +16,11 @@ function App() {
     <div>
       <h1>Product Management</h1>
       <ProductForm />
-      <h1>Product List</h1>
+      <h3>Product List</h3>
       {products.length === 0 ? (
         <p>No products available</p>
       ) : (
-        <table border={1} cellPadding={10}>
+        <table border={1} cellPadding={10} className='table'>
           <thead>
             <tr>
               <th>SR. No</th>
@@ -31,7 +31,7 @@ function App() {
               <th>Action</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className='tbody'>
             {products.map((product, index) => (
               <tr key={product.id}>
                 <td>{index + 1}</td>
